@@ -239,7 +239,7 @@ h1 {
   transition: all 0.3s ease;
 }
 .custom-checkbox::after {
-  content: "✔️";
+  content: "";
   width: 10px;
   height: 5px;
   border-left: 3px solid white;
