@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HNG Task Flow</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <article
+      data-testid="test-to-card"
+      aria-label="A TO DO LIST"
+      role="region"
+      class="container"
+    >
+      <h1 data-testid="test-todo-title">TASK FLOW</h1>
+      <p
+        class="datedisplay"
+        id="currentdate"
+        data-testid="test-current-date"
+      ></p>
+
+      <div class="progressbar" data-testid="test-progress-section">
+        <div class="progress">
+          <span>Overall Progress</span>
+          <span
+            id="progresspercent"
+            class="progresstext"
+            data-testid="test-progress-percent"
+            >0%</span
+          >
+        </div>
+        <div class="progressbarcontainer">
+          <div
+            class="progress-bar"
+            id="progress-bar"
+            style="width: 0%"
+            data-testid="test-todo-status"
+          >
+            0%
+          </div>
+        </div>
+        <div class="progressstatus">
+          <span id="remainingtask" data-testid="test-remaining-tasks"
+            >0 tasks remaining</span
+          >
+          <span id="completionmessage" data-testid="test-completion-message"
+            >Lets get started!</span
+          >
+        </div>
+      </div>
+
+      <div class="input-section" data-testid="test-input-section">
+        <input
+          type="text"
+          id="task-input"
+          placeholder="What do you want to do today?"
+          data-testid="test-task-input"
+        />
+        <input
+          type="datetime-local"
+          id="due-date-input"
+          data-testid="test-due-date-input"
+        />
+        <select id="priority-input" data-testid="test-priority-select">
+          <option value="low" selected>Low Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
+        <button
+          class="add-button"
+          onclick="addTask()"
+          data-testid="test-add-task-button"
+        >
+          ➕ Add task
+        </button>
+      </div>
+
+      <div class="filter-section" data-testid="test-filter-section">
+        <button
+          class="filter-button active"
+          onclick="filterTasks('all', event)"
+          data-testid="test-filter-all"
+        >
+          All
+        </button>
+        <button
+          class="filter-button"
+          onclick="filterTasks('active', event)"
+          data-testid="test-filter-active"
+        >
+          Active
+        </button>
+        <button
+          class="filter-button"
+          onclick="filterTasks('completed', event)"
+          data-testid="test-filter-completed"
+        >
+          Completed
+        </button>
+        <button
+          class="toggle-all-button"
+          data-testid="test-todo-complete-toggle"
+          onclick="toggleAllTasks()"
+        >
+          🔄 Toggle All
+        </button>
+      </div>
+
+      <div class="task-list" id="task-list" data-testid="test-task-list"></div>
+
+      <div
+        class="empty-state"
+        id="empty-state"
+        style="display: none"
+        data-testid="test-empty-state"
+      >
+        <h3>No tasks to display</h3>
+        <p>Add a new task to get started!</p>
+      </div>
+
+      <div id="task-modal" class="modal" data-testid="test-edit-modal">
+        <div class="modal-content">
+          <h2 data-testid="test-modal-title">✏️ Edit Task</h2>
+          <input
+            type="hidden"
+            id="edit-task-id"
+            data-testid="test-edit-task-id"
+          />
+          <input
+            type="text"
+            id="edit-task-input"
+            data-testid="test-edit-task-input"
+          />
+          <input
+            type="datetime-local"
+            id="edit-time-input"
+            data-testid="test-edit-due-date"
+          />
+          <select
+            id="edit-priority-input"
+            data-testid="test-edit-priority-select"
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <div class="modal-buttons" data-testid="test-modal-buttons">
+            <button
+              class="save-button"
+              onclick="saveTask()"
+              data-testid="test-save-button"
+            >
+              💾 Save
+            </button>
+            <button
+              class="cancel-button"
+              onclick="closeModal()"
+              data-testid="test-cancel-button"
+            >
+              ❌ Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <script src="script.js"></script>
+  </body>
+</html>
