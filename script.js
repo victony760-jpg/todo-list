@@ -14,27 +14,6 @@ let tasks = [
     completed: true,
   },
   {
-    id: 3,
-    title: "Write project documentation",
-    dueDate: new Date(Date.now() - 3600000 * 1).toISOString(),
-    priority: "low",
-    completed: false,
-  },
-  {
-    id: 4,
-    title: "Get to work as urgent as possible",
-    dueDate: new Date(Date.now() + 3600000 * 24).toISOString(),
-    priority: "high",
-    completed: false,
-  },
-  {
-    id: 5,
-    title: "Review code for security vulnerabilities",
-    dueDate: new Date(Date.now() + 3600000 * 12).toISOString(),
-    priority: "medium",
-    completed: true,
-  },
-  {
     id: 6,
     title: "Prepare presentation slides",
     dueDate: new Date(Date.now() + 3600000 * 48).toISOString(),
