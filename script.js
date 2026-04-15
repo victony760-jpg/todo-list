@@ -44,6 +44,8 @@ let tasks = [
 ];
 
 let currentFilter = "all";
+let editingTaskId = null;
+let expandedTasks = new Set();
 
 document.addEventListener("DOMContentLoaded", () => {
   updateDateDisplay();
@@ -147,8 +149,16 @@ function renderTasks() {
       const div = document.createElement("div");
       div.className = `task-item ${task.completed ? "completed" : ""}`;
       div.setAttribute("data-testid", `test-task-item-${task.id}`);
+      div.onclick = (e) => {
+        // Don't toggle expand if clicking on buttons, inputs, or checkboxes
+        if (!e.target.closest("button, input, select")) {
+          toggleExpand(task.id);
+        }
+      };
 
       const timeStatus = getTimeStatus(task.dueDate, task.completed);
+      const isEditing = editingTaskId === task.id;
+      const isExpanded = expandedTasks.has(task.id);
 
       div.innerHTML = `
         <div class="checkbox-wrapper">
@@ -157,16 +167,36 @@ function renderTasks() {
         </div>
         <div class="task-content">
             <div class="task-header">
-                <span class="task-title" style="color: #333" data-testid="test-task-title-${task.id}">${escapeHtml(task.title)}</span>
-                <span class="priority-badge priority-${task.priority}" data-testid="test-task-priority-${task.id}">${task.priority}</span>
+                ${
+                  isEditing
+                    ? `<input type="text" class="edit-title-input" value="${escapeHtml(task.title)}" data-task-id="${task.id}">
+                  <select class="edit-priority" data-task-id="${task.id}">
+                    <option value="low" ${task.priority === "low" ? "selected" : ""}>Low</option>
+                    <option value="medium" ${task.priority === "medium" ? "selected" : ""}>Medium</option>
+                    <option value="high" ${task.priority === "high" ? "selected" : ""}>High</option>
+                  </select>`
+                    : `<span class="task-title" style="color: #333" data-testid="test-task-title-${task.id}">${escapeHtml(task.title)}</span>
+                  <span class="priority-badge priority-${task.priority}" data-testid="test-task-priority-${task.id}">${task.priority}</span>`
+                }
             </div>
-            <div class="task-meta">
-                <span data-testid="test-task-due-date-${task.id}">📅 ${new Date(task.dueDate).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                <span class="status-indicator ${timeStatus.class}" data-testid="test-task-status-${task.id}">${timeStatus.text}</span>
+            <div class="task-meta ${isExpanded ? "" : "collapsed"}">
+                ${
+                  isEditing
+                    ? `<div class="edit-fields">
+                    <input type="datetime-local" class="edit-due-date" data-testid="test-edit-due-date-${task.id}" data-task-id="${task.id}" value="${new Date(task.dueDate).toISOString().slice(0, 16)}">
+                  </div>`
+                    : `<span data-testid="test-task-due-date-${task.id}">📅 ${formatDueDate(task.dueDate)}</span>
+                  <span class="status-indicator ${timeStatus.class}" data-testid="test-task-status-${task.id}">${timeStatus.text}</span>`
+                }
             </div>
         </div>
         <div class="task-actions">
-            <button class="button-edit" onclick="openEditModal(${task.id})" data-testid="test-edit-button-${task.id}">✏️</button>
+            ${
+              isEditing
+                ? `<button class="button-save" onclick="saveEdit(${task.id})" data-testid="test-save-button-${task.id}">💾</button>
+               <button class="button-cancel" onclick="cancelEdit()" data-testid="test-cancel-button-${task.id}">❌</button>`
+                : `<button class="button-edit" onclick="startEdit(${task.id})" data-testid="test-edit-button-${task.id}">✏️</button>`
+            }
             <button class="button-delete" onclick="deleteTask(${task.id})" data-testid="test-delete-button-${task.id}">🗑️</button>
         </div>
       `;
@@ -184,6 +214,56 @@ function getTimeStatus(dueDate, isCompleted) {
   return { text: "Active", class: "status-active" };
 }
 
+function formatDueDate(dueDate) {
+  const now = new Date();
+  const due = new Date(dueDate);
+  const diffTime = due - now;
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffTime < 0) {
+    // Overdue
+    const overdueMinutes = Math.abs(diffMinutes);
+    const overdueHours = Math.abs(diffHours);
+    const overdueDays = Math.abs(diffDays);
+
+    if (overdueMinutes < 60) {
+      return overdueMinutes === 1
+        ? "Overdue by 1 minute"
+        : `Overdue by ${overdueMinutes} minutes`;
+    } else if (overdueHours < 24) {
+      return overdueHours === 1
+        ? "Overdue by 1 hour"
+        : `Overdue by ${overdueHours} hours`;
+    } else {
+      return overdueDays === 1
+        ? "Overdue by 1 day"
+        : `Overdue by ${overdueDays} days`;
+    }
+  } else {
+    // Not overdue
+    if (diffMinutes < 60) {
+      // Due in less than 1 hour
+      return diffMinutes <= 1
+        ? "Due in 1 minute"
+        : `Due in ${diffMinutes} minutes`;
+    } else if (diffHours < 24) {
+      // Due in less than 24 hours
+      return diffHours === 1 ? "Due in 1 hour" : `Due in ${diffHours} hours`;
+    } else if (diffDays === 1) {
+      // Due tomorrow
+      return "Due tomorrow";
+    } else if (diffDays <= 7) {
+      // Due in 2-7 days
+      return `Due in ${diffDays} days`;
+    } else {
+      // Due in more than a week, show actual date
+      return `Due ${due.toLocaleString([], { month: "short", day: "numeric", year: "numeric" })}`;
+    }
+  }
+}
+
 function updateProgress() {
   const total = tasks.length;
   const completed = tasks.filter((t) => t.completed).length;
@@ -196,33 +276,47 @@ function updateProgress() {
     `${total - completed} tasks remaining`;
 }
 
-// Modal Logic
-function openEditModal(id) {
-  const task = tasks.find((t) => t.id === id);
-  if (!task) return;
-  document.getElementById("edit-task-id").value = id;
-  document.getElementById("edit-task-input").value = task.title;
-  document.getElementById("edit-time-input").value = new Date(task.dueDate)
-    .toISOString()
-    .slice(0, 16);
-  document.getElementById("edit-priority-input").value = task.priority;
-  document.getElementById("task-modal").classList.add("active");
+// Edit functions
+function startEdit(id) {
+  editingTaskId = id;
+  renderTasks();
 }
 
-function closeModal() {
-  document.getElementById("task-modal").classList.remove("active");
-}
-
-function saveTask() {
-  const id = parseInt(document.getElementById("edit-task-id").value);
+function saveEdit(id) {
   const task = tasks.find((t) => t.id === id);
   if (task) {
-    task.title = document.getElementById("edit-task-input").value;
-    task.dueDate = document.getElementById("edit-time-input").value;
-    task.priority = document.getElementById("edit-priority-input").value;
-    renderTasks();
-    closeModal();
+    const titleInput = document.querySelector(
+      `.edit-title-input[data-task-id="${id}"]`,
+    );
+    const dueDateInput = document.querySelector(
+      `.edit-due-date[data-task-id="${id}"]`,
+    );
+    const priorityInput = document.querySelector(
+      `.edit-priority[data-task-id="${id}"]`,
+    );
+
+    if (titleInput && dueDateInput && priorityInput) {
+      task.title = titleInput.value.trim();
+      task.dueDate = dueDateInput.value;
+      task.priority = priorityInput.value;
+    }
   }
+  editingTaskId = null;
+  renderTasks();
+}
+
+function cancelEdit() {
+  editingTaskId = null;
+  renderTasks();
+}
+
+function toggleExpand(id) {
+  if (expandedTasks.has(id)) {
+    expandedTasks.delete(id);
+  } else {
+    expandedTasks.add(id);
+  }
+  renderTasks();
 }
 
 function escapeHtml(text) {
